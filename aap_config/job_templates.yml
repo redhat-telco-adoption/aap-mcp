@@ -6,7 +6,7 @@ controller_job_templates:
     project: MCP Demo Project
     playbook: playbooks/01_hello_world.yml
     inventory: MCP Demo Inventory
-    execution_environment: MCP Demo EE
+    execution_environment: Product Demos EE
     ask_variables_on_launch: true
     extra_vars:
       operator_name: "MCP User"
@@ -17,7 +17,7 @@ controller_job_templates:
     project: MCP Demo Project
     playbook: playbooks/02_system_info.yml
     inventory: MCP Demo Inventory
-    execution_environment: MCP Demo EE
+    execution_environment: Product Demos EE
 
   - name: "MCP Demo | Environment Report"
     description: "Generate a health report — supports env_name and team extra vars"
@@ -25,7 +25,7 @@ controller_job_templates:
     project: MCP Demo Project
     playbook: playbooks/03_report.yml
     inventory: MCP Demo Inventory
-    execution_environment: MCP Demo EE
+    execution_environment: Product Demos EE
     ask_variables_on_launch: true
     extra_vars:
       env_name: development
