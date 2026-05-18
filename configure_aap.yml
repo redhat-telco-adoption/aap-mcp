@@ -17,9 +17,20 @@
       ansible.builtin.include_role:
         name: infra.controller_configuration.hosts
 
-    - name: Apply job template configuration
-      ansible.builtin.include_role:
-        name: infra.controller_configuration.job_templates
+    - name: Create job templates
+      ansible.controller.job_template:
+        name: "{{ item.name }}"
+        description: "{{ item.description | default('') }}"
+        organization: "{{ item.organization }}"
+        project: "{{ item.project }}"
+        playbook: "{{ item.playbook }}"
+        inventory: "{{ item.inventory }}"
+        execution_environment: "{{ item.execution_environment | default(omit) }}"
+        ask_variables_on_launch: "{{ item.ask_variables_on_launch | default(false) }}"
+        extra_vars: "{{ item.extra_vars | default(omit) }}"
+        validate_certs: false
+        state: present
+      loop: "{{ controller_job_templates }}"
 
     - name: Report completion
       ansible.builtin.debug:
