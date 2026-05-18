@@ -2,10 +2,10 @@
 
 ## Environment
 - AAP 4.7.11 on OpenShift (aap namespace)
-- Controller URL: https://aap-controller-aap.apps.cluster-tvs26-1.dynamic2.redhatworkshops.io
-- Gateway URL: https://aap-aap.apps.cluster-tvs26-1.dynamic2.redhatworkshops.io
+- Controller URL: `https://aap-controller-aap.apps.<cluster-domain>/`
+- Gateway URL: `https://aap-aap.apps.<cluster-domain>/`
 - Admin password: `oc get secret aap-controller-admin-password -n aap -o jsonpath='{.data.password}' | base64 -d`
-- MCP URL: https://aap-mcp-aap.apps.cluster-tvs26-1.dynamic2.redhatworkshops.io/mcp
+- MCP URL: `https://aap-mcp-aap.apps.<cluster-domain>/mcp` — token in `.mcp.json` (gitignored)
 - Repo: https://github.com/redhat-telco-adoption/aap-mcp (public)
 
 ## Baseline (pre-demo — do not delete)
@@ -73,7 +73,7 @@
 ## Act 3 bootstrap commands (REST API — run once per demo)
 ```bash
 AAP_PASS=$(oc get secret aap-controller-admin-password -n aap -o jsonpath='{.data.password}' | base64 -d)
-AAP_HOST="https://aap-controller-aap.apps.cluster-tvs26-1.dynamic2.redhatworkshops.io"
+AAP_HOST="https://aap-controller-aap.apps.<cluster-domain>"
 
 # 1. Create project (replace ORG_ID and EE_ID with actual values from Act 2)
 PROJECT=$(curl -sk -u "admin:$AAP_PASS" \
@@ -111,8 +111,8 @@ echo "Credential attached"
 ## Cleanup script (run between demos)
 ```bash
 AAP_PASS=$(oc get secret aap-controller-admin-password -n aap -o jsonpath='{.data.password}' | base64 -d)
-AAP_HOST="https://aap-controller-aap.apps.cluster-tvs26-1.dynamic2.redhatworkshops.io"
-AAP_GW="https://aap-aap.apps.cluster-tvs26-1.dynamic2.redhatworkshops.io"
+AAP_HOST="https://aap-controller-aap.apps.<cluster-domain>"
+AAP_GW="https://aap-aap.apps.<cluster-domain>"
 
 echo "=== Deleting controller job templates ==="
 for id in 12 13 14 15 16 17 18 19 20; do
