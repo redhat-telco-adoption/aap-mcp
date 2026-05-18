@@ -1,0 +1,40 @@
+---
+- name: OS Patching Workflow
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  vars:
+    target_env: "development"
+    patch_type: "security"
+    reboot_required: false
+    maintenance_window: "02:00-04:00 UTC"
+  tasks:
+    - name: Announce patching window
+      ansible.builtin.debug:
+        msg: "OS Patching initiated | Env: {{ target_env }} | Type: {{ patch_type }} | Window: {{ maintenance_window }}"
+
+    - name: Pre-patch snapshot
+      ansible.builtin.debug:
+        msg: "Snapshot created for {{ ansible_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})"
+
+    - name: Check available updates
+      ansible.builtin.debug:
+        msg: "Found security and bug fix updates available"
+
+    - name: Apply {{ patch_type }} patches
+      ansible.builtin.debug:
+        msg: "Applying {{ patch_type }} patches to {{ ansible_hostname }}..."
+
+    - name: Validate system services post-patch
+      ansible.builtin.debug:
+        msg: "All critical services running post-patch"
+
+    - name: Check if reboot is required
+      ansible.builtin.debug:
+        msg: "{{ 'Reboot scheduled for end of maintenance window' if reboot_required else 'No reboot required' }}"
+
+    - name: Update compliance record
+      ansible.builtin.debug:
+        msg: >
+          Patch compliance updated: {{ ansible_hostname }} | {{ patch_type }} patches applied |
+          Env: {{ target_env }} | Date: {{ ansible_date_time.date }}

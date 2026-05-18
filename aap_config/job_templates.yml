@@ -1,5 +1,6 @@
 ---
 controller_job_templates:
+  # ── Core demo templates ────────────────────────────────────────────────────
   - name: "MCP Demo | Hello World"
     description: "Simple hello world playbook — demonstrates basic job launch via MCP"
     organization: MCP Demo Org
@@ -30,3 +31,51 @@ controller_job_templates:
     extra_vars:
       env_name: development
       team: Platform Ops
+
+  # ── Analytics seeding templates ────────────────────────────────────────────
+  - name: "MCP Demo | Deploy Application"
+    description: "Application deployment — fails on production (missing change window). Used for failure analytics."
+    organization: MCP Demo Org
+    project: MCP Demo Project
+    playbook: playbooks/04_flaky.yml
+    inventory: MCP Demo Inventory
+    execution_environment: Product Demos EE
+    ask_variables_on_launch: true
+    extra_vars:
+      env_name: development
+      app_version: "1.0.0"
+      app_name: payment-service
+
+  - name: "MCP Demo | Data Sync"
+    description: "Long-running data synchronization job — used to show duration analytics"
+    organization: MCP Demo Org
+    project: MCP Demo Project
+    playbook: playbooks/05_slow.yml
+    inventory: MCP Demo Inventory
+    execution_environment: Product Demos EE
+    ask_variables_on_launch: true
+    extra_vars:
+      sleep_seconds: 20
+      source_system: crm-db
+      target_system: data-warehouse
+
+  - name: "MCP Demo | OS Patching"
+    description: "OS patching workflow — realistic multi-task automation scenario"
+    organization: MCP Demo Org
+    project: MCP Demo Project
+    playbook: playbooks/06_patching.yml
+    inventory: MCP Demo Inventory
+    execution_environment: Product Demos EE
+    ask_variables_on_launch: true
+    extra_vars:
+      target_env: development
+      patch_type: security
+
+  # ── Seeder (analytics data generation) ────────────────────────────────────
+  - name: "MCP Demo | Seed Job History"
+    description: "Fires ~48 jobs across all demo templates to populate analytics data. Production Deploy jobs will fail by design."
+    organization: MCP Demo Org
+    project: MCP Demo Project
+    playbook: seed_job_history.yml
+    inventory: MCP Demo Inventory
+    execution_environment: Product Demos EE

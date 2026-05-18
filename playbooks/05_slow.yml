@@ -1,0 +1,31 @@
+---
+- name: Data Synchronization Job
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    sleep_seconds: 20
+    source_system: "crm-db"
+    target_system: "data-warehouse"
+    record_count: 15000
+  tasks:
+    - name: Initialize sync job
+      ansible.builtin.debug:
+        msg: "Starting data sync: {{ source_system }} → {{ target_system }} ({{ record_count }} records)"
+
+    - name: Extract records from source
+      ansible.builtin.debug:
+        msg: "Extracting {{ record_count }} records from {{ source_system }}..."
+
+    - name: Process and transform records
+      ansible.builtin.shell: "sleep {{ (sleep_seconds * 0.5) | int }}"
+
+    - name: Load records into target
+      ansible.builtin.shell: "sleep {{ (sleep_seconds * 0.3) | int }}"
+
+    - name: Validate record counts
+      ansible.builtin.shell: "sleep {{ (sleep_seconds * 0.2) | int }}"
+
+    - name: Sync complete
+      ansible.builtin.debug:
+        msg: "Data sync complete: {{ record_count }} records transferred from {{ source_system }} to {{ target_system }}"

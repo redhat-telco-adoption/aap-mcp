@@ -1,0 +1,37 @@
+---
+- name: Deploy Application
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    env_name: "development"
+    app_version: "1.0.0"
+    app_name: "payment-service"
+  tasks:
+    - name: Pre-deployment validation
+      ansible.builtin.debug:
+        msg: "Validating deployment of {{ app_name }} v{{ app_version }} to {{ env_name }}..."
+
+    - name: Check change window approval
+      ansible.builtin.fail:
+        msg: >
+          Deployment BLOCKED: Production deployments require an approved change window.
+          App: {{ app_name }} v{{ app_version }} | Environment: {{ env_name }}
+          Open a change request and re-run during the approved window.
+      when: env_name == "production"
+
+    - name: Pull container image
+      ansible.builtin.debug:
+        msg: "Pulling {{ app_name }}:{{ app_version }} from registry..."
+
+    - name: Run pre-deploy smoke test
+      ansible.builtin.debug:
+        msg: "Smoke test passed for {{ env_name }}"
+
+    - name: Deploy application
+      ansible.builtin.debug:
+        msg: "{{ app_name }} v{{ app_version }} deployed successfully to {{ env_name }}"
+
+    - name: Validate deployment health
+      ansible.builtin.debug:
+        msg: "Health check: OK — {{ app_name }} is responding on {{ env_name }}"

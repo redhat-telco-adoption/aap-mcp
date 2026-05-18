@@ -32,9 +32,17 @@
         state: present
       loop: "{{ controller_job_templates }}"
 
+    - name: Attach AAP credential to Seed Job History template
+      ansible.controller.job_template:
+        name: "MCP Demo | Seed Job History"
+        credentials:
+          - "AAP Credential"
+        validate_certs: false
+        state: present
+
     - name: Report completion
       ansible.builtin.debug:
         msg:
           - "AAP configuration complete!"
           - "Created: MCP Demo Inventory + localhost host"
-          - "Created: 3 job templates (Hello World, System Info, Environment Report)"
+          - "Created: {{ controller_job_templates | length }} job templates"

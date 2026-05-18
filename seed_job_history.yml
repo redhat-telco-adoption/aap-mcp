@@ -1,0 +1,70 @@
+---
+- name: Seed AAP Job History for Analytics Demo
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    controller_validate_certs: false
+    # Each batch defines a template + extra_vars + how many times to launch it.
+    # Production Flaky Deploy runs will fail (by design) to create analytics variety.
+    seed_batches:
+      - template: "MCP Demo | Hello World"
+        extra_vars: {operator_name: "ops-user"}
+        count: 8
+      - template: "MCP Demo | Hello World"
+        extra_vars: {operator_name: "dev-user"}
+        count: 5
+      - template: "MCP Demo | System Info"
+        extra_vars: {}
+        count: 6
+      - template: "MCP Demo | Environment Report"
+        extra_vars: {env_name: "development", team: "App Developers"}
+        count: 5
+      - template: "MCP Demo | Environment Report"
+        extra_vars: {env_name: "production", team: "Platform Ops"}
+        count: 3
+      - template: "MCP Demo | Deploy Application"
+        extra_vars: {env_name: "development", app_version: "2.1.0"}
+        count: 6
+      - template: "MCP Demo | Deploy Application"
+        extra_vars: {env_name: "production", app_version: "2.1.0"}
+        count: 5
+      - template: "MCP Demo | Data Sync"
+        extra_vars: {sleep_seconds: 20, source_system: "crm-db"}
+        count: 2
+      - template: "MCP Demo | Data Sync"
+        extra_vars: {sleep_seconds: 30, source_system: "erp-db"}
+        count: 2
+      - template: "MCP Demo | OS Patching"
+        extra_vars: {target_env: "development", patch_type: "security"}
+        count: 4
+      - template: "MCP Demo | OS Patching"
+        extra_vars: {target_env: "production", patch_type: "security"}
+        count: 2
+
+  tasks:
+    - name: Build flat job launch list (expand each batch by count)
+      ansible.builtin.set_fact:
+        all_launches: "{{ all_launches | default([]) + ([item | dict2items | rejectattr('key', 'equalto', 'count') | items2dict] * item.count) }}"
+      loop: "{{ seed_batches }}"
+
+    - name: Report seed plan
+      ansible.builtin.debug:
+        msg: "Launching {{ all_launches | length }} jobs across {{ seed_batches | length }} templates. Production Deploy jobs will fail by design."
+
+    - name: Fire all seed jobs (no wait — parallel execution)
+      ansible.controller.job_launch:
+        name: "{{ item.template }}"
+        extra_vars: "{{ item.extra_vars }}"
+        wait: false
+        validate_certs: false
+      loop: "{{ all_launches }}"
+      loop_control:
+        label: "{{ item.template }} | {{ item.extra_vars }}"
+
+    - name: Seeding complete
+      ansible.builtin.debug:
+        msg:
+          - "Seeding complete — {{ all_launches | length }} jobs queued in AAP."
+          - "Allow ~3-5 minutes for all jobs to finish executing."
+          - "Expected failures: MCP Demo | Deploy Application with env_name=production ({{ seed_batches | selectattr('template', 'equalto', 'MCP Demo | Deploy Application') | selectattr('extra_vars.env_name', 'equalto', 'production') | map(attribute='count') | sum }} jobs)"
