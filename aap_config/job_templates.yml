@@ -71,6 +71,20 @@ controller_job_templates:
       target_env: development
       patch_type: security
 
+  # ── Troubleshooting demo ──────────────────────────────────────────────────
+  - name: "MCP Demo | Configure Database"
+    description: "Database connection setup — fails when db_host is not provided. Used for troubleshooting demo."
+    organization: MCP Demo Org
+    project: MCP Demo Project
+    playbook: playbooks/07_misconfigured.yml
+    inventory: MCP Demo Inventory
+    execution_environment: Product Demos EE
+    ask_variables_on_launch: true
+    extra_vars:
+      db_name: app_production
+      db_user: app_service
+      db_port: 5432
+
   # ── Seeder (analytics data generation) ────────────────────────────────────
   - name: "MCP Demo | Seed Job History"
     description: "Fires ~48 jobs across all demo templates to populate analytics data. Production Deploy jobs will fail by design."

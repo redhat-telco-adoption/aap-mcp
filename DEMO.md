@@ -2,199 +2,327 @@
 
 ## Story
 > "Our team just got access to an AAP instance. Using Claude Code and the AAP MCP server,
-> we'll set up a complete automation environment — users, teams, credentials, execution
-> environments — and then register our playbook repo and run our first jobs, all through
-> natural language."
+> we'll set up a complete automation environment, run automation at scale, troubleshoot
+> failures, audit access, and extract business intelligence — all through natural language."
 
-## Prerequisites
-- Claude Code running with the AAP MCP server configured (`.mcp.json`)
-- Repo already pushed: `https://github.com/redhat-telco-adoption/aap-mcp`
-- AAP admin credentials available
-
----
-
-## Act 1 — Show the repo (30 seconds)
-
-**Talking point:** "We already have our Ansible content in a git repo. Three playbooks, all running on localhost so the demo is self-contained. We also have config-as-code YAML that describes the inventories and job templates we want AAP to manage."
-
-Show the files:
-- `playbooks/01_hello_world.yml`
-- `playbooks/02_system_info.yml`
-- `playbooks/03_report.yml`
-- `aap_config/inventories.yml`
-- `aap_config/job_templates.yml`
-- `configure_aap.yml` ← the bootstrap playbook that applies all the above to AAP
+## Quick reference: resource IDs
+| Resource | ID |
+|---|---|
+| Org: MCP Demo Org | 3 |
+| Inventory: MCP Demo Inventory | 3 |
+| EE: Product Demos EE | 4 |
+| Credential: AAP Credential (controller) | 3 |
+| JT: Configure AAP (bootstrap) | 12 |
+| JT: Hello World | 13 |
+| JT: System Info | 14 |
+| JT: Environment Report | 15 |
+| JT: Deploy Application (flaky) | 16 |
+| JT: Data Sync (slow) | 17 |
+| JT: OS Patching | 18 |
+| JT: Seed Job History | 19 |
+| JT: Configure Database (broken) | 20 |
 
 ---
 
-## Act 2 — Build the foundation via MCP
+## Act 1 — Show the repo *(30 seconds)*
+
+**Talking point:** "All our automation lives in git. Playbooks, a config-as-code directory,
+and a bootstrap playbook that lets AAP configure itself. Everything Claude does today
+flows through the AAP MCP server."
+
+Show:
+- `playbooks/` — 7 playbooks (hello world through misconfigured db)
+- `aap_config/` — inventories.yml + job_templates.yml (CaC)
+- `configure_aap.yml` — the bootstrap
+- `seed_job_history.yml` — automation that creates automation history
+
+---
+
+## Act 2 — Foundation via MCP
 
 **Prompt Claude Code:**
 ```
 Check the status of our AAP instance and tell me what's already configured there.
 ```
-
-**Then:**
 ```
 Create a new organization called "MCP Demo Org" for our demo environment.
 ```
-
-**Then:**
 ```
-Create two teams in the MCP Demo Org: "Platform Ops" and "App Developers".
+Create two teams in MCP Demo Org: "Platform Ops" and "App Developers".
 ```
-
-**Then:**
 ```
-Create two users: ops-user (assign to Platform Ops team) and dev-user (assign to App Developers team).
-Give them secure passwords and member role assignments.
+Create two users: ops-user (assign to Platform Ops) and dev-user (assign to App Developers).
 ```
-
-**Then:**
 ```
-Create a Machine credential called "MCP Demo SSH Key" scoped to MCP Demo Org.
-Also create a Container Registry credential called "MCP Demo Registry" for quay.io, also scoped to MCP Demo Org.
+Create a Machine credential called "MCP Demo SSH Key" and a Container Registry
+credential called "MCP Demo Registry" for quay.io — both scoped to MCP Demo Org.
 ```
-
-**Then:**
 ```
-Create an Execution Environment called "MCP Demo EE" using the image
+Create an Execution Environment called "MCP Demo EE" using
 registry.redhat.io/ansible-automation-platform/ee-minimal-rhel9:latest,
-scoped to MCP Demo Org.
+linked to the MCP Demo Registry credential.
 ```
 
-**Talking point:** "Every one of those operations went through the MCP server — no UI, no CLI, just Claude Code understanding natural language and calling the right API."
+**Talking point:** "Every one of those operations went through the MCP server —
+no UI, no CLI, just natural language calling the right API."
 
 ---
 
-## Act 3 — Register the project (honest MCP gap moment)
-
-**Talking point:** "Here's where we hit an interesting limitation. The MCP server exposes a lot of AAP operations, but project creation isn't one of them yet. Watch how Claude Code handles this."
+## Act 3 — Register project + bootstrap *(acknowledged MCP gap)*
 
 **Prompt Claude Code:**
 ```
-I want AAP to pull our playbooks from https://github.com/redhat-telco-adoption/aap-mcp
-Create a project called "MCP Demo Project" in the MCP Demo Org pointing to that repo.
+I want AAP to pull our playbooks from https://github.com/redhat-telco-adoption/aap-mcp.
+Register it as a project called "MCP Demo Project" in MCP Demo Org.
 ```
 
-Claude Code will note the MCP gap and fall back to direct REST API calls. The commands it runs will look like:
+**Talking point:** "Claude notices project creation isn't exposed by the MCP server yet
+and falls back to direct REST API calls — and calls it out explicitly."
 
-```bash
-# Set your AAP controller URL and credentials
-export AAP_HOST="https://<your-controller-url>"
-export AAP_USER="admin"
-export AAP_PASS="<your-password>"
-
-# Create the project
-curl -sk -u "$AAP_USER:$AAP_PASS" \
-  "$AAP_HOST/api/controller/v2/projects/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "MCP Demo Project",
-    "description": "Demo content from aap-mcp repo",
-    "organization": <MCP_DEMO_ORG_ID>,
-    "scm_type": "git",
-    "scm_url": "https://github.com/redhat-telco-adoption/aap-mcp",
-    "scm_branch": "main",
-    "scm_clean": true,
-    "default_environment": <MCP_DEMO_EE_ID>
-  }'
-
-# Create the bootstrap job template
-curl -sk -u "$AAP_USER:$AAP_PASS" \
-  "$AAP_HOST/api/controller/v2/job_templates/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "MCP Demo | Configure AAP",
-    "description": "Config-as-code bootstrap — creates inventory and job templates",
-    "organization": <MCP_DEMO_ORG_ID>,
-    "project": <MCP_DEMO_PROJECT_ID>,
-    "playbook": "configure_aap.yml",
-    "inventory": 1,
-    "execution_environment": 4,
-    "ask_variables_on_launch": false,
-    "extra_vars": ""
-  }'
-```
-
-> **Note:** `inventory: 1` is "Demo Inventory" (existing) and `execution_environment: 4` is
-> "Product Demos EE" (existing, has `infra.controller_configuration` installed).
-> The bootstrap job needs the controller credential attached separately:
-> `POST /api/controller/v2/job_templates/<id>/credentials/ {"id": 3}`
+REST API calls (script in notes.md):
+- `POST /api/controller/v2/projects/` → MCP Demo Project (org:3, EE:4)
+- Wait for sync
+- `POST /api/controller/v2/job_templates/` → MCP Demo | Configure AAP (with AAP Credential)
 
 ---
 
 ## Act 4 — Config-as-code via MCP
 
-**Talking point:** "Now that the project is registered and synced, we let AAP configure itself. The `configure_aap.yml` playbook uses the `infra.controller_configuration` collection to create our inventory and job templates from the YAML files in the repo."
-
 **Prompt Claude Code:**
 ```
-List the available job templates and then launch the "MCP Demo | Configure AAP" job.
-Poll it until it completes and show me the output.
+List the available job templates, then launch "MCP Demo | Configure AAP"
+and wait for it to complete. Show me what it created.
 ```
 
-**Expected outcome:** Job runs, stdout shows inventory + 3 job templates being created.
+**Expected:** Inventory + localhost host + all demo job templates created from the repo's CaC YAML.
 
 ---
 
-## Act 5 — Verify via MCP
+## Act 5 — Execute and observe
 
 **Prompt Claude Code:**
 ```
-List all inventories and job templates now. What new resources did the configure job create?
+Launch "MCP Demo | Hello World" with operator_name set to "Charter Demo".
+Wait for it to finish, then show me the full output and individual task events.
 ```
-
-**Expected outcome:**
-- New inventory: **MCP Demo Inventory** (with localhost host)
-- New job templates: **MCP Demo | Hello World**, **MCP Demo | System Info**, **MCP Demo | Environment Report**
+```
+Now launch "MCP Demo | Environment Report" with env_name=production and team="Platform Ops".
+```
+```
+Show me the activity stream for this session — what operations were performed and by whom?
+```
 
 ---
 
-## Act 6 — Execute and observe
+## Act 6 — Troubleshoot a failed job
+
+**Talking point:** "Now let's show how Claude handles failure — not just reporting it,
+but diagnosing it and driving the fix. Watch the full loop."
+
+**Step 1 — Create the failure:**
+```
+Launch "MCP Demo | Configure Database". Don't pass any extra vars — just run it as-is.
+```
+
+*(Job fails in ~3 seconds with an assertion error)*
+
+**Step 2 — Diagnose:**
+```
+That job failed. Read the output, explain what went wrong, and tell me how to fix it.
+```
+
+*(Claude reads stdout via MCP, identifies the missing `db_host` variable,
+explains the assert block, and proposes the fix)*
+
+**Step 3 — Fix and relaunch:**
+```
+Fix it — relaunch with the correct configuration.
+```
+
+*(Claude relaunches with `db_host=db.internal.example.com` — job succeeds)*
+
+**Talking point:** "Three prompts. No browser, no SSH, no log grepping. Claude found
+the root cause, proposed the fix, and executed it without leaving the conversation."
+
+---
+
+## Act 7 — Understand an existing playbook
+
+**Talking point:** "Flip it around — instead of running automation, let's understand
+what's already there. Institutional knowledge on demand."
 
 **Prompt Claude Code:**
 ```
-Launch the "MCP Demo | Hello World" job template and wait for it to finish.
-Then show me the full output and the individual task events.
+Look at the "MCP Demo | Deploy Application" job template. Read the playbook,
+check its recent job history, and give me a plain-English summary: what it does,
+how often it runs, and any concerns I should know about.
 ```
 
-**Then:**
+*(Claude reads `playbooks/04_flaky.yml`, queries job history via MCP,
+surfaces the 45% failure rate and the change-window policy blocking production)*
+
 ```
-Now launch "MCP Demo | Environment Report" with extra vars: env_name=production, team="Platform Ops"
+Why does it fail on production but succeed on development? Walk me through the logic.
 ```
 
-**Then:**
 ```
-Show me the activity stream for the last 15 minutes. What operations were performed and by whom?
+If I wanted to allow production deployments safely, what would you change?
 ```
 
-**Talking point:** "The activity stream is a full audit trail — every resource created, every job launched, every change made. All driven by Claude Code through the MCP server."
+**Talking point:** "This is how a new team member gets up to speed in minutes
+instead of hours. Or how an operator verifies what they're about to run."
 
 ---
 
-## Key demo points to emphasize
+## Act 8 — Day 2 ops / ChatOps
 
-| What | How |
-|------|-----|
-| RBAC setup (org, teams, users) | MCP `organizations_create`, `teams_create`, `users_create` |
-| Credentials & EE | MCP `credentials_create`, `execution_environments_create` |
-| Project registration | Direct REST API (known MCP gap — Claude Code adapts) |
-| Config-as-code execution | MCP `job_templates_launch_create` |
-| Job launch & observability | MCP `jobs_retrieve`, `jobs_stdout_retrieve`, `jobs_job_events_list` |
-| Audit trail | MCP `activitystream_list` |
+**Talking point:** "The NOC use case — answers without a browser."
 
-## Repo structure (reference)
+**Prompt Claude Code:**
 ```
-aap-mcp/
-├── playbooks/
-│   ├── 01_hello_world.yml      # greeting + timestamp
-│   ├── 02_system_info.yml      # localhost facts
-│   └── 03_report.yml           # parameterized health report
-├── aap_config/
-│   ├── inventories.yml         # CaC: MCP Demo Inventory + localhost host
-│   └── job_templates.yml       # CaC: 3 job templates
-├── collections/
-│   └── requirements.yml        # infra.controller_configuration dependency
-└── configure_aap.yml           # bootstrap playbook
+What jobs ran in the last hour? Any failures?
 ```
+```
+Show me all failed jobs. For each one: template name, when it failed, one-line reason.
+```
+```
+Take the most recent failed Deploy Application job and relaunch it
+targeting the development environment so it succeeds.
+```
+```
+Which jobs are currently running or pending in the queue?
+```
+
+**Talking point:** "This replaces 'let me check the dashboard'. Ask Claude,
+get the answer in seconds, with drill-down on demand."
+
+---
+
+## Act 9 — RBAC audit
+
+**Talking point:** "Security and compliance teams love this one."
+
+**Prompt Claude Code:**
+```
+Give me a complete access report for MCP Demo Org — who has access to what,
+with their roles.
+```
+```
+What teams does ops-user belong to? What can they actually do?
+```
+```
+Are there any users who have been provisioned but never launched a job?
+```
+```
+Show me all role assignments created in the last 24 hours.
+Who granted access to whom?
+```
+
+**Talking point:** "RBAC audits that used to take an hour now take 30 seconds.
+And unlike a static report, you can ask follow-up questions."
+
+---
+
+## Act 10 — Analytics
+
+**Talking point:** "Finally — the AI analyst angle. Not a fixed dashboard,
+but a conversation with your automation data."
+
+### 10a — System health (metrics_retrieve)
+```
+Give me a health check of our AAP environment — capacity, license usage,
+what's running right now, anything concerning.
+```
+
+**What Claude surfaces from metrics_retrieve:**
+- 1 controller node, 642 capacity slots, 0% utilized
+- 100-host license, 2 hosts registered, 98 remaining
+- 0 running / 0 pending jobs, system idle
+
+### 10b — Execution leaderboard
+```
+Based on our job history, rank all templates by number of runs.
+Which is the most executed playbook?
+```
+```
+Which template has the highest failure rate? Give me percentages, not just counts.
+```
+```
+Which jobs take the longest? Show average duration by template.
+```
+
+**Expected answers:**
+- Most executed: Hello World (15 runs)
+- Highest failure rate: Deploy Application (45% — 5 of 11 failed)
+- Slowest: Data Sync (30s avg) — 10x slower than Hello World (3s avg)
+
+### 10c — Failure pattern deep-dive
+```
+Look at all the Deploy Application failures. Is there a pattern?
+Same error, same environment, same user every time?
+```
+
+*(Claude pages through failed jobs, reads stdout samples, finds:
+all 5 failures are production deployments, all hit the same "change window" assertion,
+all launched by admin)*
+
+```
+What's the business impact of this failure pattern?
+What would you recommend to fix it?
+```
+
+### 10d — Resource utilization
+```
+Which organization runs more automation — Default or MCP Demo Org?
+Break it down by template.
+```
+```
+Are there any job templates that have never been executed?
+Flag them as potentially stale.
+```
+
+### 10e — Proactive recommendations
+```
+Based on everything you can see — job history, failure rates, resource usage,
+RBAC configuration — what are the top three things I should address this week?
+```
+
+*(Claude synthesizes across all data sources and returns a prioritized action list:
+1) Fix the Deploy Application change-window flow — 45% failure rate is operational risk,
+2) Data Sync runs are slow at 30s — review for optimization opportunities,
+3) Two users provisioned with no job history — confirm they still need access)*
+
+**Talking point:** "A dashboard shows you numbers. Claude tells you what they mean
+and what to do about them. That's the difference."
+
+---
+
+## MCP capability map
+
+| Use case | MCP tools |
+|---|---|
+| RBAC setup | `organizations_create`, `teams_create`, `users_create`, `role_user_assignments_create` |
+| Credentials & EE | `credentials_create`, `execution_environments_create` |
+| Project registration | REST API (MCP gap — Claude adapts) |
+| Config-as-code | `job_templates_launch_create` → AAP configures itself |
+| Job launch + observe | `job_templates_launch_create`, `jobs_retrieve`, `jobs_stdout_retrieve`, `jobs_job_events_list` |
+| Troubleshooting | `jobs_retrieve` → `jobs_stdout_retrieve` → `jobs_relaunch_create` |
+| ChatOps | `jobs_list`, `jobs_relaunch_create`, `metrics_retrieve` |
+| RBAC audit | `role_user_assignments_list`, `users_list`, `teams_list`, `activitystream_list` |
+| System health | `metrics_retrieve` |
+| Execution analytics | `jobs_list` (paginated) → Claude aggregates |
+| Failure patterns | `jobs_list` + `jobs_stdout_retrieve` → Claude synthesizes |
+
+## Analytics dataset (seeded)
+| Template | Runs | Failures | Fail% | Avg Duration |
+|---|---|---|---|---|
+| Hello World | 15 | 1 | 7% | 3s |
+| Deploy Application | 11 | 5 | 45% | 4s |
+| Environment Report | 8 | 0 | 0% | 5s |
+| OS Patching | 6 | 0 | 0% | 5s |
+| System Info | 6 | 0 | 0% | 5s |
+| Data Sync | 4 | 0 | 0% | 30s |
+
+## Cleanup script (run between demos — see notes.md for full script)
+Controller resources to delete: job templates 12–20, inventory 3, project 11, EE 5, credentials 7–8
+Gateway resources to delete: users 5–6, teams 1–2, org 3

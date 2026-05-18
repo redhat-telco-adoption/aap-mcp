@@ -1,0 +1,38 @@
+---
+- name: Configure Database Connection
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    db_name: "app_production"
+    db_user: "app_service"
+    db_port: 5432
+    # db_host intentionally omitted — simulates missing infrastructure variable
+    # Fix: pass db_host as extra var (e.g. db_host=db.internal.example.com)
+  tasks:
+    - name: Validate required configuration
+      ansible.builtin.assert:
+        that:
+          - db_host is defined
+          - db_host | length > 0
+        fail_msg: >-
+          CONFIGURATION ERROR: 'db_host' is not defined.
+          This variable must be provided as an extra var or in the inventory.
+          Example: db_host=db.internal.example.com
+
+    - name: Verify port is reachable
+      ansible.builtin.wait_for:
+        host: "{{ db_host }}"
+        port: "{{ db_port }}"
+        timeout: 5
+      ignore_errors: true
+      register: port_check
+
+    - name: Confirm connection
+      ansible.builtin.debug:
+        msg: "Database connection verified: {{ db_user }}@{{ db_host }}:{{ db_port }}/{{ db_name }}"
+      when: not port_check.failed | default(false)
+
+    - name: Report connection status
+      ansible.builtin.debug:
+        msg: "DB config applied: {{ db_name }} on {{ db_host }}:{{ db_port }}"
