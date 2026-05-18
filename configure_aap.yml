@@ -3,29 +3,23 @@
   hosts: localhost
   connection: local
   gather_facts: false
+  vars_files:
+    - aap_config/inventories.yml
+    - aap_config/job_templates.yml
   vars:
-    controller_host: "{{ lookup('env', 'CONTROLLER_HOST') | default(lookup('env', 'AWX_HOST'), true) }}"
-    controller_username: "{{ lookup('env', 'CONTROLLER_USERNAME') | default(lookup('env', 'AWX_USERNAME'), true) }}"
-    controller_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') | default(lookup('env', 'AWX_PASSWORD'), true) }}"
     controller_validate_certs: false
   tasks:
     - name: Apply inventory configuration
       ansible.builtin.include_role:
         name: infra.controller_configuration.inventories
-      vars:
-        controller_inventories: "{{ lookup('file', 'aap_config/inventories.yml') | from_yaml | json_query('controller_inventories') }}"
 
     - name: Apply host configuration
       ansible.builtin.include_role:
         name: infra.controller_configuration.hosts
-      vars:
-        controller_hosts: "{{ lookup('file', 'aap_config/inventories.yml') | from_yaml | json_query('controller_hosts') }}"
 
     - name: Apply job template configuration
       ansible.builtin.include_role:
         name: infra.controller_configuration.job_templates
-      vars:
-        controller_job_templates: "{{ lookup('file', 'aap_config/job_templates.yml') | from_yaml | json_query('controller_job_templates') }}"
 
     - name: Report completion
       ansible.builtin.debug:
