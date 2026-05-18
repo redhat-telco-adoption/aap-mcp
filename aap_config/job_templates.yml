@@ -1,0 +1,32 @@
+---
+controller_job_templates:
+  - name: "MCP Demo | Hello World"
+    description: "Simple hello world playbook — demonstrates basic job launch via MCP"
+    organization: MCP Demo Org
+    project: MCP Demo Project
+    playbook: playbooks/01_hello_world.yml
+    inventory: MCP Demo Inventory
+    execution_environment: MCP Demo EE
+    ask_variables_on_launch: true
+    extra_vars:
+      operator_name: "MCP User"
+
+  - name: "MCP Demo | System Info"
+    description: "Gather and display system facts from the execution environment"
+    organization: MCP Demo Org
+    project: MCP Demo Project
+    playbook: playbooks/02_system_info.yml
+    inventory: MCP Demo Inventory
+    execution_environment: MCP Demo EE
+
+  - name: "MCP Demo | Environment Report"
+    description: "Generate a health report — supports env_name and team extra vars"
+    organization: MCP Demo Org
+    project: MCP Demo Project
+    playbook: playbooks/03_report.yml
+    inventory: MCP Demo Inventory
+    execution_environment: MCP Demo EE
+    ask_variables_on_launch: true
+    extra_vars:
+      env_name: development
+      team: Platform Ops

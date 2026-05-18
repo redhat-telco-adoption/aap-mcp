@@ -1,0 +1,29 @@
+---
+- name: System Information Report
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  tasks:
+    - name: Display system summary
+      ansible.builtin.debug:
+        msg:
+          - "=== System Information ==="
+          - "Hostname     : {{ ansible_hostname }}"
+          - "OS           : {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "Architecture : {{ ansible_architecture }}"
+          - "Kernel       : {{ ansible_kernel }}"
+          - "Python       : {{ ansible_python_version }}"
+          - "CPU cores    : {{ ansible_processor_vcpus }}"
+          - "Total RAM    : {{ (ansible_memtotal_mb / 1024) | round(1) }} GB"
+          - "Free RAM     : {{ (ansible_memfree_mb / 1024) | round(1) }} GB"
+
+    - name: Display network info
+      ansible.builtin.debug:
+        msg:
+          - "=== Network ==="
+          - "Default IPv4 : {{ ansible_default_ipv4.address | default('N/A') }}"
+          - "Interface    : {{ ansible_default_ipv4.interface | default('N/A') }}"
+
+    - name: Display storage info
+      ansible.builtin.debug:
+        msg: "=== Mounts: {{ ansible_mounts | map(attribute='mount') | list | join(', ') }}"

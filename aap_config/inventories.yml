@@ -1,0 +1,14 @@
+---
+controller_inventories:
+  - name: MCP Demo Inventory
+    description: Localhost inventory for MCP demo jobs
+    organization: MCP Demo Org
+    variables:
+      ansible_connection: local
+
+controller_hosts:
+  - name: localhost
+    inventory: MCP Demo Inventory
+    variables:
+      ansible_connection: local
+      ansible_python_interpreter: "{{ ansible_playbook_python }}"

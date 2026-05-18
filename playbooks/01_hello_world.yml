@@ -1,0 +1,16 @@
+---
+- name: Hello World
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    greeting: "Hello from Ansible Automation Platform!"
+    operator: "{{ operator_name | default('MCP User') }}"
+  tasks:
+    - name: Print greeting
+      ansible.builtin.debug:
+        msg: "{{ greeting }} — launched by {{ operator }}"
+
+    - name: Print timestamp
+      ansible.builtin.debug:
+        msg: "Job executed at: {{ lookup('pipe', 'date -u +%Y-%m-%dT%H:%M:%SZ') }}"

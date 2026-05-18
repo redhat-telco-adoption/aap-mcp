@@ -1,0 +1,49 @@
+---
+- name: Generate Environment Report
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  vars:
+    environment_name: "{{ env_name | default('development') }}"
+    team_name: "{{ team | default('Platform Ops') }}"
+    report_version: "1.0"
+  tasks:
+    - name: Build report
+      ansible.builtin.set_fact:
+        report:
+          title: "Environment Report v{{ report_version }}"
+          generated_at: "{{ ansible_date_time.iso8601 }}"
+          environment: "{{ environment_name }}"
+          team: "{{ team_name }}"
+          system:
+            hostname: "{{ ansible_hostname }}"
+            os: "{{ ansible_distribution }} {{ ansible_distribution_version }}"
+            python: "{{ ansible_python_version }}"
+          status: "healthy"
+          checks:
+            - name: "Ansible connectivity"
+              result: "PASS"
+            - name: "AAP job execution"
+              result: "PASS"
+            - name: "Execution environment"
+              result: "PASS"
+
+    - name: Print report
+      ansible.builtin.debug:
+        msg:
+          - "╔══════════════════════════════════════════╗"
+          - "║  {{ report.title | center(40) }}  ║"
+          - "╠══════════════════════════════════════════╣"
+          - "║  Generated : {{ report.generated_at }}"
+          - "║  Env       : {{ report.environment }}"
+          - "║  Team      : {{ report.team }}"
+          - "║  Host      : {{ report.system.hostname }}"
+          - "║  OS        : {{ report.system.os }}"
+          - "╠══════════════════════════════════════════╣"
+          - "║  Health Checks:"
+          - "{% for check in report.checks %}║    [{{ check.result }}] {{ check.name }}\n{% endfor %}"
+          - "╚══════════════════════════════════════════╝"
+
+    - name: Confirm report status
+      ansible.builtin.debug:
+        msg: "Report complete — all systems {{ report.status | upper }}"
