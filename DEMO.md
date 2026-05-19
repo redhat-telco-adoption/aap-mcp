@@ -1,33 +1,16 @@
 # AAP MCP Server — Live Demo Script
 
 ## Story
-> "Our team just got access to an AAP instance. Using Claude Code and the AAP MCP server,
+> "Our team just got access to an AAP instance. Using an AI coding assistant and the AAP MCP server,
 > we'll set up a complete automation environment, run automation at scale, troubleshoot
 > failures, audit access, and extract business intelligence — all through natural language."
-
-## Quick reference: resource IDs
-| Resource | ID |
-|---|---|
-| Org: MCP Demo Org | 3 |
-| Inventory: MCP Demo Inventory | 3 |
-| EE: Product Demos EE | 4 |
-| Credential: AAP Credential (controller) | 3 |
-| JT: Configure AAP (bootstrap) | 12 |
-| JT: Hello World | 13 |
-| JT: System Info | 14 |
-| JT: Environment Report | 15 |
-| JT: Deploy Application (flaky) | 16 |
-| JT: Data Sync (slow) | 17 |
-| JT: OS Patching | 18 |
-| JT: Seed Job History | 19 |
-| JT: Configure Database (broken) | 20 |
 
 ---
 
 ## Act 1 — Show the repo *(30 seconds)*
 
 **Talking point:** "All our automation lives in git. Playbooks, a config-as-code directory,
-and a bootstrap playbook that lets AAP configure itself. Everything Claude does today
+and a bootstrap playbook that lets AAP configure itself. Everything the AI assistant does today
 flows through the AAP MCP server."
 
 Show:
@@ -40,7 +23,7 @@ Show:
 
 ## Act 2 — Foundation via MCP
 
-**Prompt Claude Code:**
+**Prompt:**
 ```
 Check the status of our AAP instance and tell me what's already configured there.
 ```
@@ -70,25 +53,29 @@ no UI, no CLI, just natural language calling the right API."
 
 ## Act 3 — Register project + bootstrap *(acknowledged MCP gap)*
 
-**Prompt Claude Code:**
-```
-I want AAP to pull our playbooks from https://github.com/redhat-telco-adoption/aap-mcp.
-Register it as a project called "MCP Demo Project" in MCP Demo Org.
+**Talking point:** "Project creation isn't exposed by the MCP server yet. Rather than dropping
+to raw REST calls, we reach for Ansible — the same `ansible.controller` collection that AAP
+itself uses for config-as-code. One playbook, two tasks, fully idempotent."
+
+Run the bootstrap playbook (requires controller credentials in env or `~/.netrc`):
+```bash
+ansible-playbook bootstrap_aap.yml \
+  -e controller_host=https://aap-controller-aap.apps.<cluster-domain> \
+  -e controller_username=admin \
+  -e controller_password=$AAP_PASS
 ```
 
-**Talking point:** "Claude notices project creation isn't exposed by the MCP server yet
-and falls back to direct REST API calls — and calls it out explicitly."
+What `bootstrap_aap.yml` does:
+1. `ansible.controller.project` — creates **MCP Demo Project**, points it at the GitHub repo, waits for sync
+2. `ansible.controller.job_template` — creates **MCP Demo | Configure AAP** with the AAP Credential attached
 
-REST API calls (script in notes.md):
-- `POST /api/controller/v2/projects/` → MCP Demo Project (org:3, EE:4)
-- Wait for sync
-- `POST /api/controller/v2/job_templates/` → MCP Demo | Configure AAP (with AAP Credential)
+Both tasks are idempotent — safe to re-run between demo runs.
 
 ---
 
 ## Act 4 — Config-as-code via MCP
 
-**Prompt Claude Code:**
+**Prompt:**
 ```
 List the available job templates, then launch "MCP Demo | Configure AAP"
 and wait for it to complete. Show me what it created.
@@ -100,7 +87,7 @@ and wait for it to complete. Show me what it created.
 
 ## Act 5 — Execute and observe
 
-**Prompt Claude Code:**
+**Prompt:**
 ```
 Launch "MCP Demo | Hello World" with operator_name set to "Charter Demo".
 Wait for it to finish, then show me the full output and individual task events.
@@ -116,7 +103,7 @@ Show me the activity stream for this session — what operations were performed 
 
 ## Act 6 — Troubleshoot a failed job
 
-**Talking point:** "Now let's show how Claude handles failure — not just reporting it,
+**Talking point:** "Now let's show how the AI assistant handles failure — not just reporting it,
 but diagnosing it and driving the fix. Watch the full loop."
 
 **Step 1 — Create the failure:**
@@ -131,7 +118,7 @@ Launch "MCP Demo | Configure Database". Don't pass any extra vars — just run i
 That job failed. Read the output, explain what went wrong, and tell me how to fix it.
 ```
 
-*(Claude reads stdout via MCP, identifies the missing `db_host` variable,
+*(The AI assistant reads stdout via MCP, identifies the missing `db_host` variable,
 explains the assert block, and proposes the fix)*
 
 **Step 3 — Fix and relaunch:**
@@ -139,9 +126,9 @@ explains the assert block, and proposes the fix)*
 Fix it — relaunch with the correct configuration.
 ```
 
-*(Claude relaunches with `db_host=db.internal.example.com` — job succeeds)*
+*(The AI assistant relaunches with `db_host=db.internal.example.com` — job succeeds)*
 
-**Talking point:** "Three prompts. No browser, no SSH, no log grepping. Claude found
+**Talking point:** "Three prompts. No browser, no SSH, no log grepping. The AI assistant found
 the root cause, proposed the fix, and executed it without leaving the conversation."
 
 ---
@@ -151,14 +138,14 @@ the root cause, proposed the fix, and executed it without leaving the conversati
 **Talking point:** "Flip it around — instead of running automation, let's understand
 what's already there. Institutional knowledge on demand."
 
-**Prompt Claude Code:**
+**Prompt:**
 ```
 Look at the "MCP Demo | Deploy Application" job template. Read the playbook,
 check its recent job history, and give me a plain-English summary: what it does,
 how often it runs, and any concerns I should know about.
 ```
 
-*(Claude reads `playbooks/04_flaky.yml`, queries job history via MCP,
+*(The AI assistant reads `playbooks/04_flaky.yml`, queries job history via MCP,
 surfaces the 45% failure rate and the change-window policy blocking production)*
 
 ```
@@ -178,7 +165,7 @@ instead of hours. Or how an operator verifies what they're about to run."
 
 **Talking point:** "The NOC use case — answers without a browser."
 
-**Prompt Claude Code:**
+**Prompt:**
 ```
 What jobs ran in the last hour? Any failures?
 ```
@@ -193,7 +180,7 @@ targeting the development environment so it succeeds.
 Which jobs are currently running or pending in the queue?
 ```
 
-**Talking point:** "This replaces 'let me check the dashboard'. Ask Claude,
+**Talking point:** "This replaces 'let me check the dashboard'. Just ask,
 get the answer in seconds, with drill-down on demand."
 
 ---
@@ -202,7 +189,7 @@ get the answer in seconds, with drill-down on demand."
 
 **Talking point:** "Security and compliance teams love this one."
 
-**Prompt Claude Code:**
+**Prompt:**
 ```
 Give me a complete access report for MCP Demo Org — who has access to what,
 with their roles.
@@ -234,7 +221,7 @@ Give me a health check of our AAP environment — capacity, license usage,
 what's running right now, anything concerning.
 ```
 
-**What Claude surfaces from metrics_retrieve:**
+**What the AI assistant surfaces from metrics_retrieve:**
 - 1 controller node, 642 capacity slots, 0% utilized
 - 100-host license, 2 hosts registered, 98 remaining
 - 0 running / 0 pending jobs, system idle
@@ -262,7 +249,7 @@ Look at all the Deploy Application failures. Is there a pattern?
 Same error, same environment, same user every time?
 ```
 
-*(Claude pages through failed jobs, reads stdout samples, finds:
+*(The AI assistant pages through failed jobs, reads stdout samples, finds:
 all 5 failures are production deployments, all hit the same "change window" assertion,
 all launched by admin)*
 
@@ -287,12 +274,12 @@ Based on everything you can see — job history, failure rates, resource usage,
 RBAC configuration — what are the top three things I should address this week?
 ```
 
-*(Claude synthesizes across all data sources and returns a prioritized action list:
+*(The AI assistant synthesizes across all data sources and returns a prioritized action list:
 1) Fix the Deploy Application change-window flow — 45% failure rate is operational risk,
 2) Data Sync runs are slow at 30s — review for optimization opportunities,
 3) Two users provisioned with no job history — confirm they still need access)*
 
-**Talking point:** "A dashboard shows you numbers. Claude tells you what they mean
+**Talking point:** "A dashboard shows you numbers. The AI assistant tells you what they mean
 and what to do about them. That's the difference."
 
 ---
@@ -303,15 +290,15 @@ and what to do about them. That's the difference."
 |---|---|
 | RBAC setup | `organizations_create`, `teams_create`, `users_create`, `role_user_assignments_create` |
 | Credentials & EE | `credentials_create`, `execution_environments_create` |
-| Project registration | REST API (MCP gap — Claude adapts) |
+| Project registration | REST API (MCP gap — AI assistant adapts) |
 | Config-as-code | `job_templates_launch_create` → AAP configures itself |
 | Job launch + observe | `job_templates_launch_create`, `jobs_retrieve`, `jobs_stdout_retrieve`, `jobs_job_events_list` |
 | Troubleshooting | `jobs_retrieve` → `jobs_stdout_retrieve` → `jobs_relaunch_create` |
 | ChatOps | `jobs_list`, `jobs_relaunch_create`, `metrics_retrieve` |
 | RBAC audit | `role_user_assignments_list`, `users_list`, `teams_list`, `activitystream_list` |
 | System health | `metrics_retrieve` |
-| Execution analytics | `jobs_list` (paginated) → Claude aggregates |
-| Failure patterns | `jobs_list` + `jobs_stdout_retrieve` → Claude synthesizes |
+| Execution analytics | `jobs_list` (paginated) → AI assistant aggregates |
+| Failure patterns | `jobs_list` + `jobs_stdout_retrieve` → AI assistant synthesizes |
 
 ## Analytics dataset (seeded)
 | Template | Runs | Failures | Fail% | Avg Duration |
@@ -323,6 +310,6 @@ and what to do about them. That's the difference."
 | System Info | 6 | 0 | 0% | 5s |
 | Data Sync | 4 | 0 | 0% | 30s |
 
-## Cleanup script (run between demos — see notes.md for full script)
-Controller resources to delete: job templates 12–20, inventory 3, project 11, EE 5, credentials 7–8
-Gateway resources to delete: users 5–6, teams 1–2, org 3
+## Cleanup (run between demos — see notes.md for full command)
+Run `ansible-playbook cleanup_aap.yml` to remove all demo-created controller resources.
+Gateway resources (org, teams, users) must be deleted manually via MCP or the AAP UI.

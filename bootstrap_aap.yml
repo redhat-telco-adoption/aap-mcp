@@ -1,0 +1,52 @@
+---
+- name: Bootstrap AAP — register project and create Configure AAP job template
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    bootstrap_org: MCP Demo Org
+    bootstrap_project: MCP Demo Project
+    bootstrap_jt: "MCP Demo | Configure AAP"
+    bootstrap_playbook: configure_aap.yml
+    bootstrap_inventory: Demo Inventory
+    bootstrap_ee: Product Demos EE
+    bootstrap_credential: "AAP Credential"
+  module_defaults:
+    group/ansible.controller.controller:
+      controller_host: "{{ controller_host }}"
+      controller_username: "{{ controller_username }}"
+      controller_password: "{{ controller_password }}"
+      validate_certs: false
+  tasks:
+    - name: Create MCP Demo Project
+      ansible.controller.project:
+        name: "{{ bootstrap_project }}"
+        description: "Demo content from github.com/redhat-telco-adoption/aap-mcp"
+        organization: "{{ bootstrap_org }}"
+        scm_type: git
+        scm_url: https://github.com/redhat-telco-adoption/aap-mcp
+        scm_branch: main
+        scm_clean: true
+        default_environment: "{{ bootstrap_ee }}"
+        state: present
+        wait: true
+
+    - name: Create Configure AAP job template
+      ansible.controller.job_template:
+        name: "{{ bootstrap_jt }}"
+        description: "Config-as-code bootstrap"
+        organization: "{{ bootstrap_org }}"
+        project: "{{ bootstrap_project }}"
+        playbook: "{{ bootstrap_playbook }}"
+        inventory: "{{ bootstrap_inventory }}"
+        execution_environment: "{{ bootstrap_ee }}"
+        credentials:
+          - "{{ bootstrap_credential }}"
+        state: present
+
+    - name: Report completion
+      ansible.builtin.debug:
+        msg:
+          - "Bootstrap complete!"
+          - "Project '{{ bootstrap_project }}' synced from GitHub"
+          - "Job template '{{ bootstrap_jt }}' ready to launch"
