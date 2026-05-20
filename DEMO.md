@@ -57,12 +57,12 @@ no UI, no CLI, just natural language calling the right API."
 to raw REST calls, we reach for Ansible — the same `ansible.controller` collection that AAP
 itself uses for config-as-code. One playbook, two tasks, fully idempotent."
 
-Run the bootstrap playbook (requires controller credentials in env or `~/.netrc`):
+Run the bootstrap playbook (requires `.env` sourced — `source .env`):
 ```bash
 ansible-playbook bootstrap_aap.yml \
-  -e controller_host=https://aap-controller-aap.apps.<cluster-domain> \
-  -e controller_username=admin \
-  -e controller_password=$AAP_PASS
+  -e controller_host=$AAP_HOST \
+  -e controller_username=$AAP_USERNAME \
+  -e controller_password=$AAP_CONTROLLER_PASS
 ```
 
 What `bootstrap_aap.yml` does:
@@ -89,7 +89,7 @@ and wait for it to complete. Show me what it created.
 
 **Prompt:**
 ```
-Launch "MCP Demo | Hello World" passing extra_vars {"operator_name": "Charter Demo"} in the request body.
+Launch "MCP Demo | Hello World" passing extra_vars {"operator_name": "Demo User"} in the request body.
 Wait for it to finish, then show me the full output and individual task events.
 ```
 ```

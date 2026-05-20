@@ -65,13 +65,13 @@ Configure the MCP server in your AI coding assistant's `.mcp.json`:
 ### 1. Bootstrap — create the project and Configure AAP template
 
 ```bash
-AAP_PASS=$(oc get secret aap-controller-admin-password -n aap \
+AAP_CONTROLLER_PASS=$(oc get secret aap-controller-admin-password -n aap \
   -o jsonpath='{.data.password}' | base64 -d)
 
 ansible-playbook bootstrap_aap.yml \
   -e controller_host=https://aap-controller-aap.apps.<cluster-domain> \
   -e controller_username=admin \
-  -e "controller_password=$AAP_PASS"
+  -e "controller_password=$AAP_CONTROLLER_PASS"
 ```
 
 This creates **MCP Demo Project** (synced from this repo) and the **MCP Demo | Configure AAP** job template. Both are idempotent — safe to re-run.
@@ -118,7 +118,7 @@ Run `MCP Demo | Seed Job History` after Act 4 to populate historical data:
 ansible-playbook cleanup_aap.yml \
   -e controller_host=https://aap-controller-aap.apps.<cluster-domain> \
   -e controller_username=admin \
-  -e "controller_password=$AAP_PASS"
+  -e "controller_password=$AAP_CONTROLLER_PASS"
 ```
 
 Then delete the gateway resources (org, teams, users) via MCP or the AAP UI — these are not managed by `cleanup_aap.yml`.

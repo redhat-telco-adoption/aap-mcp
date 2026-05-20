@@ -13,7 +13,7 @@
 *Before the audience arrives:*
 - [ ] AI coding assistant open, MCP connected (run `/mcp` if unsure)
 - [ ] This repo open in the editor — `playbooks/`, `aap_config/`, `bootstrap_aap.yml` visible
-- [ ] Terminal ready with `AAP_PASS` and `AAP_HOST` variables set
+- [ ] Terminal ready with `AAP_CONTROLLER_PASS` and `AAP_HOST` variables set
 - [ ] `oc get csr | grep Pending` returns empty
 - [ ] Previous demo cleaned up — no MCP Demo Org in AAP
 
@@ -112,7 +112,7 @@ In this case, that's Ansible itself — the same `ansible.controller` collection
 ansible-playbook bootstrap_aap.yml \
   -e controller_host=$AAP_HOST \
   -e controller_username=admin \
-  -e "controller_password=$AAP_PASS"
+  -e "controller_password=$AAP_CONTROLLER_PASS"
 ```
 
 *Wait for playbook to complete — ~30-60 seconds for project sync.*
@@ -145,7 +145,7 @@ The AI assistant didn't create those templates. AAP configured itself, using thi
 "We have templates. Let's run some automation and watch it happen in real time."
 
 ```
-Launch "MCP Demo | Hello World" passing extra_vars {"operator_name": "Charter Demo"} in the request body.
+Launch "MCP Demo | Hello World" passing extra_vars {"operator_name": "Demo User"} in the request body.
 Wait for it to finish, then show me the full output and individual task events.
 ```
 

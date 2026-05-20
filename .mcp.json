@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "aap": {
+      "type": "http",
+      "url": "${AAP_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${AAP_TOKEN}"
+      }
+    }
+  }
+}

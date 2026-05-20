@@ -5,8 +5,10 @@
 - Controller URL: `https://aap-controller-aap.apps.<cluster-domain>/`
 - Gateway URL: `https://aap-aap.apps.<cluster-domain>/`
 - Admin password: `oc get secret aap-controller-admin-password -n aap -o jsonpath='{.data.password}' | base64 -d`
-- MCP URL: `https://aap-mcp-aap.apps.<cluster-domain>/mcp` — token in `.mcp.json` (gitignored)
+- MCP URL: `https://aap-mcp-aap.apps.<cluster-domain>/mcp` — URL and token in `.env` (gitignored)
 - Repo: https://github.com/redhat-telco-adoption/aap-mcp (public)
+
+> Before launching Claude Code: `source .env` — required for MCP auth (`AAP_MCP_URL`, `AAP_TOKEN`)
 
 ## Baseline (pre-demo — do not delete)
 - Org: Default
@@ -58,23 +60,27 @@
 
 ## Act 3 bootstrap commands (run once per demo)
 ```bash
-AAP_PASS=$(oc get secret aap-controller-admin-password -n aap -o jsonpath='{.data.password}' | base64 -d)
+AAP_CONTROLLER_PASS=$(oc get secret aap-controller-admin-password -n aap -o jsonpath='{.data.password}' | base64 -d)
 AAP_HOST="https://aap-controller-aap.apps.<cluster-domain>"
 
 ansible-playbook bootstrap_aap.yml \
   -e controller_host=$AAP_HOST \
   -e controller_username=admin \
-  -e controller_password=$AAP_PASS
+  -e controller_password=$AAP_CONTROLLER_PASS
 ```
 
 `bootstrap_aap.yml` uses `ansible.controller.project` (with `wait: true`) and
 `ansible.controller.job_template` — no raw REST calls, fully idempotent.
 
+## Known limitations
+
+- Bootstrap/cleanup playbooks use `ansible.controller` collection which targets the Controller API (`/api/v2/`) directly — not the gateway. This requires separate controller credentials (`AAP_CONTROLLER_PASS`) distinct from the gateway token (`AAP_TOKEN`). The newer `ansible.platform` collection (v2.7+) and `infra.aap_configuration` (v4.5+) support gateway-native auth but migration is deferred.
+
 ## Known issues and fixes
 1. `configure_aap.yml` — use `vars_files` + `ansible.controller.job_template` directly (not infra.controller_configuration.job_templates role — it silently skips)
 2. Job templates reference `Product Demos EE` (id:4) not `MCP Demo EE` (id:5) — MCP Demo EE has no registry password
 3. `relaunch` reuses cached project revision — always trigger project sync before relaunching after a code change
-4. MCP session expires after ~10 min inactivity → run `/mcp` in the AI coding assistant to reconnect
+4. MCP session expires after ~10 min inactivity → run `/mcp reconnect aap` in the AI coding assistant to reconnect
 5. MCP `jobs_stdout_retrieve` only works with `format=json`, not `format=txt`
 6. MCP `job_templates_launch_create` extra_vars — must be inside `requestBody={"extra_vars": {...}}`. A top-level `extra_vars` kwarg is silently ignored; the job runs with template defaults. Confirmed 2026-05-20 (jobs 235–237).
 7. Analytics endpoints (`analytics_retrieve`) require Red Hat Insights subscription — not available; use `metrics_retrieve` + `jobs_list` aggregation instead
@@ -87,11 +93,11 @@ ansible-playbook bootstrap_aap.yml \
 
 ## Cleanup script (run between demos)
 ```bash
-AAP_PASS=$(oc get secret aap-controller-admin-password -n aap -o jsonpath='{.data.password}' | base64 -d)
+AAP_CONTROLLER_PASS=$(oc get secret aap-controller-admin-password -n aap -o jsonpath='{.data.password}' | base64 -d)
 AAP_HOST="https://aap-controller-aap.apps.<cluster-domain>"
 
 ansible-playbook cleanup_aap.yml \
   -e controller_host=$AAP_HOST \
   -e controller_username=admin \
-  -e "controller_password=$AAP_PASS"
+  -e "controller_password=$AAP_CONTROLLER_PASS"
 ```
