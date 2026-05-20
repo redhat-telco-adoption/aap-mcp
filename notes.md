@@ -45,10 +45,16 @@
 | Data Sync | 4 | 0 | 0% | 30s |
 
 ## Troubleshooting demo (Act 6)
-- Broken JT: id:20 "MCP Demo | Configure Database"
+- Broken JT: id:41 "MCP Demo | Configure Database"
 - Failure mode: `assert db_host is defined` fails immediately (3.4s)
-- Fix: relaunch with `db_host=db.internal.example.com`
-- Successful relaunch job id after fix: TBD (run during demo)
+- Fix: launch with `{"db_host": "db.internal.example.com"}` passed in request body
+- Successful fixed job: id:181 (status: successful, 9.4s)
+- **MCP gap / operator tips (two rules):**
+  1. Say **"launch"** not "relaunch". `jobs_relaunch_create` has no `extra_vars` field —
+     vars are silently dropped. "Launch" steers the AI to `job_templates_launch_create`.
+  2. Always phrase extra_vars as **"passing extra_vars `{...}` in the request body"**.
+     Passing `extra_vars` as a keyword argument to `job_templates_launch_create` is also
+     silently ignored — only `requestBody={"extra_vars": {...}}` is accepted by the MCP tool.
 
 ## Act 3 bootstrap commands (run once per demo)
 ```bash
@@ -70,7 +76,14 @@ ansible-playbook bootstrap_aap.yml \
 3. `relaunch` reuses cached project revision — always trigger project sync before relaunching after a code change
 4. MCP session expires after ~10 min inactivity → run `/mcp` in the AI coding assistant to reconnect
 5. MCP `jobs_stdout_retrieve` only works with `format=json`, not `format=txt`
-6. Analytics endpoints (`analytics_retrieve`) require Red Hat Insights subscription — not available; use `metrics_retrieve` + `jobs_list` aggregation instead
+6. MCP `job_templates_launch_create` extra_vars — must be inside `requestBody={"extra_vars": {...}}`. A top-level `extra_vars` kwarg is silently ignored; the job runs with template defaults. Confirmed 2026-05-20 (jobs 235–237).
+7. Analytics endpoints (`analytics_retrieve`) require Red Hat Insights subscription — not available; use `metrics_retrieve` + `jobs_list` aggregation instead
+8. **Kubelet CSR approval (SNO cluster)** — this cluster does not auto-approve kubelet serving certificate rotation. Pending CSRs cause `remote error: tls: internal error` on all pod log/exec/stdin streaming, which breaks every AAP automation job. Before each demo run, check and approve:
+   ```bash
+   oc get csr | grep Pending   # should be empty
+   oc get csr -o name | xargs oc adm certificate approve   # approve if any are pending
+   ```
+   Symptoms: AAP jobs fail in ~4s with `Receptor detail: Error streaming stdin to pod … remote error: tls: internal error`. `oc logs` on any pod in the `aap` namespace returns the same error.
 
 ## Cleanup script (run between demos)
 ```bash

@@ -89,11 +89,11 @@ and wait for it to complete. Show me what it created.
 
 **Prompt:**
 ```
-Launch "MCP Demo | Hello World" with operator_name set to "Charter Demo".
+Launch "MCP Demo | Hello World" passing extra_vars {"operator_name": "Charter Demo"} in the request body.
 Wait for it to finish, then show me the full output and individual task events.
 ```
 ```
-Now launch "MCP Demo | Environment Report" with env_name=production and team="Platform Ops".
+Now launch "MCP Demo | Environment Report" passing extra_vars {"env_name": "production", "team": "Platform Ops"} in the request body.
 ```
 ```
 Show me the activity stream for this session — what operations were performed and by whom?
@@ -121,12 +121,18 @@ That job failed. Read the output, explain what went wrong, and tell me how to fi
 *(The AI assistant reads stdout via MCP, identifies the missing `db_host` variable,
 explains the assert block, and proposes the fix)*
 
-**Step 3 — Fix and relaunch:**
+**Step 3 — Fix and launch:**
 ```
-Fix it — relaunch with the correct configuration.
+Fix it — launch "MCP Demo | Configure Database" passing extra_vars {"db_host": "db.internal.example.com"} in the request body.
 ```
 
-*(The AI assistant relaunches with `db_host=db.internal.example.com` — job succeeds)*
+*(The AI assistant launches the template with `db_host=db.internal.example.com` in the requestBody — job succeeds)*
+
+> **Operator note:** Use the word **"launch"**, not "relaunch". The MCP `jobs_relaunch_create`
+> tool schema is missing `extra_vars`, so saying "relaunch" leads the AI to that tool and the
+> vars are silently dropped. "Launch" steers it to `job_templates_launch_create`, which accepts
+> extra_vars correctly — but only when passed inside `requestBody`: `{"extra_vars": {...}}`.
+> Passing `extra_vars` as a top-level argument to that tool is also silently ignored.
 
 **Talking point:** "Three prompts. No browser, no SSH, no log grepping. The AI assistant found
 the root cause, proposed the fix, and executed it without leaving the conversation."
@@ -173,8 +179,7 @@ What jobs ran in the last hour? Any failures?
 Show me all failed jobs. For each one: template name, when it failed, one-line reason.
 ```
 ```
-Take the most recent failed Deploy Application job and relaunch it
-targeting the development environment so it succeeds.
+Launch "MCP Demo | Deploy Application" passing extra_vars {"target_env": "development"} in the request body, so it succeeds.
 ```
 ```
 Which jobs are currently running or pending in the queue?
@@ -293,7 +298,7 @@ and what to do about them. That's the difference."
 | Project registration | REST API (MCP gap — AI assistant adapts) |
 | Config-as-code | `job_templates_launch_create` → AAP configures itself |
 | Job launch + observe | `job_templates_launch_create`, `jobs_retrieve`, `jobs_stdout_retrieve`, `jobs_job_events_list` |
-| Troubleshooting | `jobs_retrieve` → `jobs_stdout_retrieve` → `jobs_relaunch_create` |
+| Troubleshooting | `jobs_retrieve` → `jobs_stdout_retrieve` → `job_templates_launch_create` (see note in Act 6) |
 | ChatOps | `jobs_list`, `jobs_relaunch_create`, `metrics_retrieve` |
 | RBAC audit | `role_user_assignments_list`, `users_list`, `teams_list`, `activitystream_list` |
 | System health | `metrics_retrieve` |
