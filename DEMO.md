@@ -60,10 +60,15 @@ itself uses for config-as-code. One playbook, two tasks, fully idempotent."
 Run the bootstrap playbook (requires `.env` sourced — `source .env`):
 ```bash
 ansible-playbook bootstrap_aap.yml \
-  -e controller_host=$AAP_HOST \
+  -e controller_host=$AAP_GATEWAY_URL \
   -e controller_username=$AAP_USERNAME \
-  -e controller_password=$AAP_CONTROLLER_PASS
+  -e controller_password=$AAP_GATEWAY_PASS
 ```
+
+> **Operator note:** Use `AAP_GATEWAY_URL` and `AAP_GATEWAY_PASS`, **not** `AAP_HOST`/`AAP_CONTROLLER_PASS`.
+> In AAP 2.5+, the `ansible.controller` collection authenticates through the platform gateway.
+> Direct REST calls to the controller URL work fine, but the collection's auth flow expects the
+> gateway entrypoint — using the controller URL returns HTTP 401.
 
 What `bootstrap_aap.yml` does:
 1. `ansible.controller.project` — creates **MCP Demo Project**, points it at the GitHub repo, waits for sync
@@ -82,6 +87,34 @@ and wait for it to complete. Show me what it created.
 ```
 
 **Expected:** Inventory + localhost host + all demo job templates created from the repo's CaC YAML.
+
+---
+
+## Act 4b — Seed job history
+
+**Talking point:** "Before we dig into analytics, we need realistic job history — multiple runs per template,
+some successes, some intentional failures. One prompt seeds the whole dataset."
+
+**Prompt:**
+```
+Launch "MCP Demo | Seed Job History" and wait for it to complete.
+```
+
+**What it does:** Runs `seed_job_history.yml` inside AAP — fires all jobs in parallel with `wait: false`
+across all demo templates, building the analytics dataset:
+
+| Template | Runs | Expected failures |
+|---|---|---|
+| Hello World | 15 | 1 (random) |
+| Deploy Application | 11 | 5 (production env → change window assert) |
+| Environment Report | 8 | 0 |
+| OS Patching | 6 | 0 |
+| System Info | 6 | 0 |
+| Data Sync | 4 | 0 |
+
+> **Operator note:** The seed job itself completes quickly (~5s) because all child jobs launch with
+> `wait: false`. The child jobs continue running in the background. Wait ~2 minutes before running
+> Act 10 analytics prompts to ensure all job history is written.
 
 ---
 
