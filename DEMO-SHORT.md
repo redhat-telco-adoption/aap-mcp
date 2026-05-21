@@ -172,6 +172,9 @@ What jobs ran in the last hour? Any failures? For each failure: template name, w
 Launch "MCP Demo | Deploy Application" passing extra_vars {"target_env": "development"} in the request body, so it succeeds.
 ```
 
+> **Operator note:** `jobs_list` `search` does a text search — does **not** filter by status.
+> `search="failed"` returns zero results. The AI assistant fetches all jobs and filters client-side.
+
 **Talking point:** "This replaces 'let me check the dashboard'. Ask, get the answer, drill down on demand."
 
 ---

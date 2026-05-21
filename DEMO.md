@@ -132,6 +132,10 @@ Now launch "MCP Demo | Environment Report" passing extra_vars {"env_name": "prod
 Show me the activity stream for this session — what operations were performed and by whom?
 ```
 
+> **Operator note:** `activitystream_list` does not support `order=-timestamp` — that field name is
+> rejected with an error. Use `order=-id` to get most-recent entries first. The AI assistant handles
+> this automatically; it only matters if you're inspecting MCP calls directly.
+
 ---
 
 ## Act 6 — Troubleshoot a failed job
@@ -217,6 +221,11 @@ Launch "MCP Demo | Deploy Application" passing extra_vars {"target_env": "develo
 ```
 Which jobs are currently running or pending in the queue?
 ```
+
+> **Operator note:** `jobs_list` `search` does a text search — it does **not** filter by status.
+> Passing `search="failed"` returns zero results. The AI assistant works around this by fetching
+> all recent jobs and filtering client-side, or reading `awx_status_total` from `metrics_retrieve`.
+> This is invisible to the audience but good to know if the AI assistant takes an unexpected path.
 
 **Talking point:** "This replaces 'let me check the dashboard'. Just ask,
 get the answer in seconds, with drill-down on demand."
