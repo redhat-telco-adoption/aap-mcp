@@ -112,9 +112,9 @@ across all demo templates, building the analytics dataset:
 | System Info | 6 | 0 |
 | Data Sync | 4 | 0 |
 
-> **Operator note:** The seed job itself completes quickly (~5s) because all child jobs launch with
-> `wait: false`. The child jobs continue running in the background. Wait ~2 minutes before running
-> Act 10 analytics prompts to ensure all job history is written.
+> **Operator note:** The seed job takes ~60–90s (not ~5s) — `ansible.controller.job_launch` makes
+> one sequential API call per job, so 48 launches at ~1.5s each takes roughly a minute. Child jobs
+> run in the background. Wait ~2 minutes after the seed job completes before running Act 10 analytics.
 
 ---
 

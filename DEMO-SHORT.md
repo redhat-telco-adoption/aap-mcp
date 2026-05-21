@@ -105,8 +105,8 @@ Launch "MCP Demo | Seed Job History" and wait for it to complete.
 | System Info | 6 | 0 |
 | Data Sync | 4 | 0 |
 
-> **Operator note:** The seed job completes in ~5s; child jobs run in the background.
-> Wait ~2 minutes before Act 10 analytics prompts.
+> **Operator note:** The seed job takes ~60–90s (sequential API calls for 48 job launches).
+> Child jobs run in the background. Wait ~2 minutes after seed completes before Act 10 analytics.
 
 ---
 
